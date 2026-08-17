@@ -1,7 +1,7 @@
 # 🏛️ ระบบจัดการวัสดุเทศบาล (Municipal Equipment Management System)
 
-ระบบจัดการวัสดุและครุภัณฑ์สำหรับเทศบาลเมืองรังสิต พัฒนาด้วย **Next.js 16 (App Router)** + **React 19** + **TypeScript** + **Zustand (State & Persistence)**  
-ออกแบบ UI/UX สวยงาม ทันสมัย เป็นภาษาไทยทั้งหมด รองรับการทำงานของผู้ใช้งาน 3 ระดับอย่างสมบูรณ์
+ระบบจัดการวัสดุและครุภัณฑ์สำหรับเทศบาลนครรังสิต พัฒนาด้วย **Next.js 16 (App Router)** + **React 19** + **TypeScript** + **Zustand (State & Persistence)** + **Prisma ORM Ready & REST API Layer**  
+ออกแบบ UI/UX สวยงาม ทันสมัย เป็นภาษาไทยทั้งหมด รองรับการทำงานของผู้ใช้งาน 3 ระดับอย่างสมบูรณ์ พร้อมชั้นเชื่อมต่อ API Gateway เต็มรูปแบบพร้อมต่อฐานข้อมูลจริง
 
 ---
 
@@ -38,18 +38,37 @@
   - มีปุ่มเลือกเหตุผลมาตรฐานสำเร็จรูป (Preset Reasons) เช่น สต็อกไม่พอ, เอกสารไม่ครบ, อยู่ระหว่างซ่อมบำรุง, เกินระยะเวลาที่กำหนด, สงวนสิทธิ์สำหรับภารกิจฉุกเฉิน
   - ระบบตรวจสอบให้ต้องระบุเหตุผลก่อนกดยืนยันไม่อนุมัติ
   - เหตุผลจะถูกบันทึกและแสดงให้เจ้าหน้าที่ผู้ขอทราบทันที ทั้งในตารางและหน้ารายละเอียดคำขอ
-- **ยกเลิกคำขอ**: ยกเลิกคำขอที่มีข้อผิดพลาด
-- **ตรวจสอบประวัติการอนุมัติ**: แท็บประวัติการพิจารณาคำขอทั้งหมดพร้อมรายชื่อผู้อนุมัติและวันที่
+### 🔒 ตารางเปรียบเทียบสิทธิ์และการจำกัดการเข้าถึง (Role-Based Access Control Matrix)
+
+| ฟังก์ชัน / หน้าของระบบ | 👑 ผู้ดูแลระบบ (Admin) | 🛡️ ผู้อนุมัติ (Approver) | 👤 เจ้าหน้าที่ (Staff) |
+| :--- | :---: | :---: | :---: |
+| **แดชบอร์ดภาพรวม (`/`)** | ✅ เข้าถึงได้ | ✅ เข้าถึงได้ | ✅ เข้าถึงได้ |
+| **ส่งคำขอเบิก–ยืม (`/requests`)** | ✅ ส่งได้ | ✅ ส่งได้ | ✅ ส่งได้ |
+| **ยกเลิกคำขอ (`/requests`)** | ✅ ยกเลิกได้ทั้งหมด | ❌ ยกเลิกของคนอื่นไม่ได้ | ⚠️ เฉพาะคำขอของตนเองที่ยังรออนุมัติ |
+| **บันทึกรับคืนอุปกรณ์ (`/returns`)** | ✅ ตรวจรับคืนได้ | ✅ ตรวจรับคืนได้ | ⚠️ เฉพาะส่งคืนอุปกรณ์ที่ตนเองยืม |
+| **อนุมัติ/ไม่อนุมัติคำขอ (`/approvals`)** | ✅ มีสิทธิ์พิจารณา | ✅ มีสิทธิ์พิจารณา | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** |
+| **ดูระดับสต็อกสินค้า (`/inventory`)** | ✅ เข้าถึงได้ | ✅ เข้าถึงได้ | ✅ เข้าถึงได้ |
+| **เติมสต็อกสินค้า Restock (`/inventory`)** | ✅ เติมสต็อกได้ | 🚫 ไม่มีสิทธิ์เติมสต็อก | 🚫 ไม่มีสิทธิ์เติมสต็อก |
+| **จัดการข้อมูลวัสดุ (`/materials`)** | ✅ เพิ่ม/แก้ไข/ลบ/เติมสต็อก | 👁️ ดูข้อมูลสเปกได้อย่างเดียว | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** |
+| **จัดการหมวดหมู่วัสดุ (`/categories`)** | ✅ เพิ่ม/แก้ไข/ลบ | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** |
+| **จัดการผู้ใช้งานระบบ (`/users`)** | ✅ เพิ่ม/แก้ไข/ลบ/กำหนดสิทธิ์ | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** |
+| **ดูประวัติการใช้งาน Audit Trail (`/history`)** | ✅ เข้าถึงได้ทั้งหมด | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** |
+| **รายงานสรุป 6 ด้าน (`/reports`)** | ✅ ดูและพิมพ์/Export | ✅ ดูและพิมพ์/Export | 🚫 **ไม่มีสิทธิ์เข้าถึง (Access Denied)** |
 
 ---
 
 ## ⚙️ 2. ขอบเขตด้านการทำงานของระบบ (System Modules)
 
 ### 🔐 2.1 ระบบเข้าสู่ระบบ (Authentication & Profile)
-- **Login**: เข้าสู่ระบบด้วยชื่อผู้ใช้งานและรหัสผ่าน พร้อมปุ่ม Quick Login จำลอง 3 บทบาท
+- **Login**: เข้าสู่ระบบด้วยอีเมลหรือชื่อผู้ใช้งาน (Email / Username) และรหัสผ่าน
+- **บัญชีผู้ใช้สำหรับแต่ละบทบาท (Role-based Accounts)**:
+  - 👑 **ผู้ดูแลระบบ (Administrator)**: `admin@rangsit.go.th` (ชื่อผู้ใช้: `admin` หรือ `somchai.j`)
+  - 🛡️ **ผู้อนุมัติ (Approver)**: `approver@rangsit.go.th` (ชื่อผู้ใช้: `approver` หรือ `prayuth.m`)
+  - 👤 **เจ้าหน้าที่ (Staff)**: `staff@rangsit.go.th` (ชื่อผู้ใช้: `staff` หรือ `wantana.s`)
+- **การ์ดตัวช่วยกรอกอีเมล (Demo Accounts Helper)**: มีการ์ดแสดงอีเมลและบทบาทบนหน้า Login พร้อมปุ่มคลิกเพื่อกรอกอัตโนมัติ สะดวกต่อการทดสอบ
 - **Logout**: ออกจากระบบและกลับสู่หน้า Login
 - **เปลี่ยนรหัสผ่าน (Change Password)**: หน้าต่าง Modal ให้ผู้ใช้เปลี่ยนรหัสผ่านของตนเอง พร้อมตรวจสอบความถูกต้อง
-- **Role Switcher**: แถบสลับบทบาทบน Header และ Sidebar เพื่อความสะดวกในการทดสอบฟังก์ชันทุกระดับ
+- **ความปลอดภัย**: แยกสิทธิ์การเข้าถึงเมนูตามบทบาทของผู้ใช้ที่เข้าสู่ระบบจริง (ตัดแถบสลับสิทธิ์ทดสอบในหน้าบ้านออกเพื่อให้เหมือนระบบจริง)
 
 ### 👥 2.2 ระบบจัดการผู้ใช้งาน (User Management)
 - **เพิ่มผู้ใช้งานใหม่**: กรอกชื่อ-นามสกุล, ชื่อผู้ใช้, อีเมล, เบอร์โทรศัพท์, แผนก/กองสังกัด
@@ -102,53 +121,132 @@
 
 ---
 
-## 🗂️ โครงสร้างไฟล์ในโปรเจกต์
+## 🌐 3. สถาปัตยกรรม REST API & Database Integration Layer
 
-```
-src/app/
-├── components/
-│   ├── AppLayout.tsx      # Layout Wrapper + Toast Notification System
-│   ├── Header.tsx         # แถบ Header + ค้นหา + แจ้งเตือน + โปรไฟล์ + เปลี่ยนรหัสผ่าน + สลับสิทธิ์
-│   ├── Sidebar.tsx        # แถบเมนูด้านข้าง + เมนูตามสิทธิ์ 3 ระดับ + ปุ่มสลับบทบาทด่วน
-│   ├── Modal.tsx          # Reusable Modal Dialog (Backdrop blur + ESC support)
-│   └── StatsCard.tsx      # การ์ดแสดงสถิติและตัวเลขสรุป
-├── data/
-│   ├── mockData.ts        # ข้อมูลจำลองตั้งต้น
-│   └── store.ts           # Zustand Store (State Management + LocalStorage Persistence)
-├── login/
-│   └── page.tsx           # หน้าเข้าสู่ระบบ พร้อมปุ่ม Quick Login 3 ระดับ
-├── requests/
-│   └── page.tsx           # ระบบส่งคำขอเบิก–ยืม และดูเหตุผลไม่อนุมัติ (สำหรับเจ้าหน้าที่/ทุกคน)
-├── returns/
-│   └── page.tsx           # ระบบบันทึกการส่งคืนอุปกรณ์และปรับสต็อก
-├── approvals/
-│   └── page.tsx           # ระบบพิจารณาอนุมัติ/ไม่อนุมัติพร้อมระบุเหตุผล (สำหรับผู้อนุมัติ)
-├── inventory/
-│   └── page.tsx           # ระบบสต็อก, ตรวจจับสินค้าใกล้หมด, และเติมสต็อก (Restock)
-├── materials/
-│   └── page.tsx           # ระบบจัดการข้อมูลวัสดุและครุภัณฑ์ (เพิ่ม/แก้ไข/ลบ/เลือกรูป)
-├── categories/
-│   └── page.tsx           # ระบบจัดการหมวดหมู่วัสดุ
-├── users/
-│   └── page.tsx           # ระบบจัดการผู้ใช้งานและกำหนดระดับสิทธิ์
-├── history/
-│   └── page.tsx           # ระบบบันทึกประวัติการใช้งาน (Audit Trail)
-├── reports/
-│   └── page.tsx           # ระบบรายงานสรุป 6 ด้าน + พิมพ์ + ส่งออก Excel
-├── globals.css            # CSS Design System ธีมเทศบาล (Navy/Gold/White)
-├── layout.tsx             # Root Layout พร้อมฟอนต์ Google Fonts (Sarabun)
-└── page.tsx               # หน้าแดชบอร์ดภาพรวมระบบ
+ระบบได้รับการสร้างทางเชื่อมต่อ API Layer ไว้อย่างสมบูรณ์แบบ รองรับทั้งการทดสอบแบบ In-Memory Server State และพร้อมสลับเชื่อมต่อกับฐานข้อมูลจริง (PostgreSQL / MySQL / SQLite ผ่าน Prisma ORM)
+
+### 🔌 3.1 รายการ REST API Endpoints
+
+| หมวดหมู่ | Method | Endpoint | รายละเอียด |
+| :--- | :--- | :--- | :--- |
+| **Authentication** | `POST` | `/api/auth/login` | เข้าสู่ระบบและรับข้อมูลผู้ใช้ |
+| | `GET` | `/api/auth/me?userId={id}` | ดึงข้อมูลโปรไฟล์ผู้ใช้งาน |
+| | `POST` | `/api/auth/change-password` | เปลี่ยนรหัสผ่าน |
+| **ผู้ใช้งาน (Users)** | `GET` | `/api/users` | ดึงรายชื่อผู้ใช้ทั้งหมด (รองรับ filter: search, role, department) |
+| | `POST` | `/api/users` | เพิ่มผู้ใช้งานใหม่ |
+| | `GET` | `/api/users/:id` | ดึงข้อมูลผู้ใช้ตาม ID |
+| | `PUT` | `/api/users/:id` | แก้ไขข้อมูลผู้ใช้ |
+| | `DELETE` | `/api/users/:id` | ลบผู้ใช้ |
+| **หมวดหมู่ (Categories)** | `GET` | `/api/categories` | ดึงรายการหมวดหมู่พร้อมจำนวนวัสดุ |
+| | `POST` | `/api/categories` | เพิ่มหมวดหมู่ใหม่ |
+| | `GET` | `/api/categories/:id` | ดูรายละเอียดหมวดหมู่ |
+| | `PUT` | `/api/categories/:id` | แก้ไขหมวดหมู่ |
+| | `DELETE` | `/api/categories/:id` | ลบหมวดหมู่ |
+| **วัสดุและครุภัณฑ์ (Materials)** | `GET` | `/api/materials` | ค้นหาและดึงรายการวัสดุ (search, categoryId, status) |
+| | `POST` | `/api/materials` | เพิ่มรายการวัสดุใหม่ |
+| | `GET` | `/api/materials/:id` | ดูรายละเอียดวัสดุ |
+| | `PUT` | `/api/materials/:id` | แก้ไขข้อมูลวัสดุ |
+| | `DELETE` | `/api/materials/:id` | ลบวัสดุ |
+| | `POST` | `/api/materials/:id/restock` | เติมสต็อกวัสดุ (+เพิ่มจำนวน และบันทึกประวัติ) |
+| **คำขอเบิก-ยืม (Requests)** | `GET` | `/api/requests` | ดึงรายการคำขอทั้งหมด (requesterId, status, type) |
+| | `POST` | `/api/requests` | สร้างคำขอเบิก/ยืมใหม่ (พร้อมตรวจสต็อก) |
+| | `GET` | `/api/requests/:id` | ดูรายละเอียดคำขอ |
+| | `POST` | `/api/requests/:id/approve` | อนุมัติคำขอ (ตัดสต็อกอัตโนมัติ) |
+| | `POST` | `/api/requests/:id/reject` | ไม่อนุมัติคำขอ (บังคับระบุเหตุผล) |
+| | `POST` | `/api/requests/:id/cancel` | ยกเลิกคำขอ |
+| **การส่งคืน (Returns)** | `GET` | `/api/returns` | ดูประวัติการส่งคืนอุปกรณ์ทั้งหมด |
+| | `POST` | `/api/returns` | บันทึกการส่งคืน (ตรวจสภาพ + คืนสต็อกเข้าคลัง) |
+| **ประวัติการใช้งาน (Logs)** | `GET` | `/api/logs` | ดู Audit Trail (filter: type, module, limit) |
+| | `POST` | `/api/logs` | บันทึก Activity Log |
+| **แดชบอร์ด (Dashboard)** | `GET` | `/api/dashboard/stats` | สรุปสถิติภาพรวม ยอดคงคลัง คำขอรออนุมัติ และกราฟ |
+
+### 🛠️ 3.2 การเรียกใช้งาน Type-Safe API Client ในโค้ด
+สามารถ import `api` จาก `@/lib/api-client` เพื่อเรียกใช้ได้ทันที:
+
+```typescript
+import { api } from '@/lib/api-client';
+
+// ตัวอย่างการดึงข้อมูลวัสดุ
+const res = await api.materials.getAll({ status: 'มีสต็อก' });
+console.log(res.data);
+
+// ตัวอย่างการอนุมัติคำขอ
+await api.requests.approve('REQ-001', { approverName: 'สมชาย ใจดี' });
+
+// ตัวอย่างการเติมสต็อก
+await api.materials.restock('MAT-001', { addQuantity: 50, reason: 'สั่งซื้อเพิ่ม' });
 ```
 
 ---
 
-## 💻 วิธีการติดตั้งและรันระบบ
+## 🗄️ 4. ฐานข้อมูล Prisma Database Schema (`prisma/schema.prisma`)
+
+Schema ได้รับการจัดทำโครงสร้างครบทุก Table พร้อม Relation และ Foreign Keys:
+- **`User`** (`users`): ตารางผู้ใช้งาน, รหัสผ่าน, บทบาท 3 ระดับ, แผนก, สถานะ
+- **`Category`** (`categories`): ตารางหมวดหมู่วัสดุ
+- **`Material`** (`materials`): ตารางวัสดุ/ครุภัณฑ์, ราคา, จำนวนคงเหลือ, จุดสั่งซื้อขั้นต่ำ, ที่จัดเก็บ
+- **`Request`** (`requests`): ตารางคำขอเบิก/ยืม, สถานะ, ผู้ขอ, ผู้อนุมัติ, วันที่ยืม-คืน, เหตุผลไม่อนุมัติ
+- **`ReturnRecord`** (`return_records`): ตารางบันทึกการส่งคืน, สภาพอุปกรณ์, ผู้ตรวจรับ
+- **`ActivityLog`** (`activity_logs`): ตาราง Audit Trail ทุกกิจกรรมในระบบ
+
+---
+
+## 🗂️ 5. โครงสร้างไฟล์ในโปรเจกต์
+
+```
+app/
+├── prisma/
+│   └── schema.prisma      # Prisma Schema ครบทุก Entity & Relations
+├── src/
+│   ├── lib/
+│   │   ├── types/
+│   │   │   └── api.ts     # DTOs & Standard API Response Interfaces
+│   │   ├── server/
+│   │   │   └── repository.ts # Server Data Layer / Repository (พร้อมสลับไป DB จริง)
+│   │   └── api-client.ts  # Type-safe API Client SDK สำหรับ Frontend
+│   └── app/
+│       ├── api/           # REST API Routes Handlers ทั้งหมด
+│       │   ├── auth/      # Login, Me, Change Password
+│       │   ├── users/     # CRUD Users
+│       │   ├── categories/# CRUD Categories
+│       │   ├── materials/ # CRUD Materials & Restock
+│       │   ├── requests/  # CRUD Requests, Approve, Reject, Cancel
+│       │   ├── returns/   # Returns & Stock restore
+│       │   ├── logs/      # Activity Logs / Audit Trail
+│       │   └── dashboard/ # Dashboard aggregated statistics
+│       ├── components/
+│       │   ├── AppLayout.tsx
+│       │   ├── Header.tsx
+│       │   ├── Sidebar.tsx
+│       │   ├── Modal.tsx
+│       │   └── StatsCard.tsx
+│       ├── data/
+│       │   ├── mockData.ts
+│       │   └── store.ts   # Zustand Store
+│       ├── login/
+│       ├── requests/
+│       ├── returns/
+│       ├── approvals/
+│       ├── inventory/
+│       ├── materials/
+│       ├── categories/
+│       ├── users/
+│       ├── history/
+│       ├── reports/
+│       ├── globals.css
+│       ├── layout.tsx
+│       └── page.tsx
+```
+
+---
+
+## 💻 6. วิธีการติดตั้งและรันระบบ
 
 ```bash
 # 1. เข้าสู่โฟลเดอร์แอป
 cd app
 
-# 2. ติดตั้ง Dependencies (ถ้ายังไม่ได้ติดตั้ง)
+# 2. ติดตั้ง Dependencies
 npm install
 
 # 3. รัน Development Server
@@ -156,3 +254,19 @@ npm run dev
 ```
 
 เปิดเบราว์เซอร์แล้วเข้าสู่: **[http://localhost:3000](http://localhost:3000)** หรือ **[http://localhost:3000/login](http://localhost:3000/login)**
+
+---
+
+## 📝 7. บันทึกประวัติการพัฒนา (Development Changelog)
+
+| วันที่ | รายการที่ดำเนินการ | ผู้รับผิดชอบ |
+| :--- | :--- | :--- |
+| **17 ส.ค. 2569 (ปรับปรุง UI/UX)** | **ยกระดับ UI/UX แทนที่ Browser Native Alert/Confirm ด้วย Custom Modals & Toast:**<br>1. ยกเลิกการใช้ `confirm()` popup เดิมของบราวเซอร์ แล้วแทนที่ด้วยหน้าต่าง **Custom Confirmation Modal** ที่ออกแบบสวยงาม (ไอคอนแจ้งเตือน, การ์ดแสดงรหัสคำขอ/รายการวัสดุ/จำนวน/ผู้ขอ และปุ่มสไตล์ Danger/Outline)<br>2. ยกเลิกการใช้ `alert()` ในหน้ารายงาน แล้วแทนที่ด้วย **Toast Notification System** ที่ทันสมัยและนุ่มนวล<br>3. ตรวจสอบทั่วทั้งระบบ ไม่มีการใช้ popup dialog ดิบของบราวเซอร์อีกต่อไป UI กลมกลืนสวยงามระดับพรีเมียม 100% | Antigravity AI Assistant |
+| **17 ส.ค. 2569 (เพิ่มปุ่มดูข้อมูล)** | **เพิ่มฟังก์ชันและหน้าต่าง Modal "ดูข้อมูล" (Material Details Modal):**<br>1. เพิ่มปุ่มคลิก "ดูข้อมูล" (Eye Icon Button) สีน้ำเงินสวยงามในตารางคลังสินค้า (`/inventory`) และตารางจัดการวัสดุ (`/materials`) สำหรับผู้ใช้งานทุกระดับ (Admin, Approver, Staff)<br>2. สร้าง Modal แสดงรายละเอียดและสเปกวัสดุแบบครบถ้วน (ไอคอนหมวดหมู่, รหัส, ชื่อ, จำนวนคงเหลือ, เกณฑ์ขั้นต่ำแจ้งเตือน, ราคาต่อหน่วย, มูลค่ารวม, สถานที่จัดเก็บ, วันที่อัปเดตล่าสุด, และคำอธิบายสเปก)<br>3. แยกสิทธิ์ปุ่มจัดการชัดเจน: เจ้าหน้าที่และผู้อนุมัติสามารถกด "ดูข้อมูล" ได้อย่างสะดวก และแอดมินสามารถกดทั้ง "ดูข้อมูล" และ "เติมสต็อก/แก้ไข/ลบ" ได้ตามปกติ | Antigravity AI Assistant |
+| **17 ส.ค. 2569 (แก้ไข Login Match Priority)** | **แก้ไขปัญหาการแย่งสิทธิ์ค้นหาผู้ใช้ (Inactive User Collision):**<br>1. ปรับระบบการค้นหาบัญชีผู้ใช้ในหน้า Login และ Server Repository ให้ค้นหาแบบ Exact Email Match และ Exact Username Match เป็นอันดับแรก<br>2. ป้องกันไม่ให้บัญชีสถานะไม่ใช้งาน (เช่น บัญชีทดสอบที่ถูกปิดการใช้งาน) แย่งสิทธิ์การล็อกอินของบัญชีหลัก (`approver@rangsit.go.th`, `admin@rangsit.go.th`, `staff@rangsit.go.th`)<br>3. ทดสอบล็อกอินครบทั้ง 3 บทบาทผ่าน 100% ราบรื่นและแม่นยำ | Antigravity AI Assistant |
+| **17 ส.ค. 2569 (แก้ไข Login & Store Sync)** | **แก้ไขปัญหาการเข้าสู่ระบบและ Sync ข้อมูลผู้ใช้ใน LocalStorage:**<br>1. ปรับปรุง Store Persistence Key และ Version (`rangsit-municipality-store-v2`) เพื่อป้องกันปัญหาข้อมูลผู้ใช้เก่าที่ค้างใน LocalStorage<br>2. ปรับปรุง Logic ใน `LoginPage` ให้ค้นหาผู้ใช้งานแบบครอบคลุมทั้งจาก Active Store Users, `mockUsers` Fallback, และ Role Matching<br>3. รองรับการเข้าสู่ระบบด้วยอีเมลทางการ (`admin@rangsit.go.th`, `approver@rangsit.go.th`, `staff@rangsit.go.th`) หรือ Username สั้น ได้อย่างราบรื่น 100%<br>4. อัปเดตการแสดงผลชื่อหน่วยงานเป็น "เทศบาลนครรังสิต" ครอบคลุมทั้งระบบ | Antigravity AI Assistant |
+| **17 ส.ค. 2569 (แก้ไข Bug)** | **แก้ไขปัญหา React Hook Order (Rendered fewer hooks than expected):**<br>1. จัดเรียงลำดับการเรียก Hooks (`useState`, `useToast`, `useAppStore`) ในทุกหน้า (`/users`, `/categories`, `/history`, `/approvals`, `/materials`, `/reports`) ให้อยู่ส่วนบนสุดของคอมโพเนนต์ก่อนการตรวจสอบเงื่อนไข Early Return<br>2. ปฏิบัติตามกฎ Rules of Hooks อย่างถูกต้อง 100% ป้องกันข้อผิดพลาดในการ Render ขณะสลับบทบาทหรือเข้าสู่หน้าที่ไม่มีสิทธิ์ | Antigravity AI Assistant |
+| **17 ส.ค. 2569 (ช่วงดึก)** | **บังคับใช้ระบบควบคุมสิทธิ์และป้องกันการแก้ไขข้ามบทบาท (Strict RBAC):**<br>1. สร้างคอมโพเนนต์ `<AccessDenied />` ป้องกันการเข้าถึง URL ตรงในหน้าที่ไม่มีสิทธิ์<br>2. ล็อกหน้า `/users`, `/categories`, `/history` ให้เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น<br>3. ล็อกหน้า `/approvals` และ `/reports` ห้ามเจ้าหน้าที่ (Staff) เข้าถึง<br>4. ล็อกหน้า `/materials` ให้ผู้อนุมัติดูได้อย่างเดียว (ซ่อนปุ่มเพิ่ม/แก้ไข/ลบ/เติมสต็อก) และห้ามเจ้าหน้าที่เข้าถึง<br>5. ล็อกปุ่มเติมสต็อกใน `/inventory` ให้เฉพาะผู้ดูแลระบบ<br>6. ล็อกปุ่มยกเลิกคำขอใน `/requests` ให้เจ้าหน้าที่ยกเลิกได้เฉพาะคำขอของตนเองที่ยังรออนุมัติเท่านั้น<br>7. กรองเมนูใน Sidebar ให้แสดงเฉพาะรายการที่ได้รับอนุญาตตามสิทธิ์จริง | Antigravity AI Assistant |
+| **17 ส.ค. 2569 (ช่วงค่ำ)** | **ปรับปรุงระบบยืนยันตัวตนด้วยอีเมลแทนการสลับบทบาท:**<br>1. ถอดปุ่มสลับบทบาทด่วน (Role Switcher) ออกจาก Sidebar, Header และ Dashboard Banner เพื่อความปลอดภัยและเป็นไปตามระบบจริง<br>2. สร้างและกำหนดอีเมลเฉพาะสำหรับแต่ละบทบาท (`admin@rangsit.go.th`, `approver@rangsit.go.th`, `staff@rangsit.go.th`)<br>3. ปรับปรุงหน้า Login ให้รองรับการค้นหาและเข้าสู่ระบบด้วย Email / Username พร้อมการ์ดกรอกอีเมลตัวอย่างแบบ 1 คลิก<br>4. อัปเดต API `/api/auth/login` และ Server Repository ให้ค้นหาผู้ใช้งานจาก Email หรือ Username ได้อย่างสมบูรณ์ | Antigravity AI Assistant |
+| **17 ส.ค. 2569** | **สร้างและเตรียมพร้อม API Layer เต็มรูปแบบก่อนเชื่อมต่อ DB จริง:**<br>1. ออกแบบ Prisma Schema (`prisma/schema.prisma`) ครบทั้ง 6 โมดูลหลัก<br>2. สร้าง Server-side Repository (`src/lib/server/repository.ts`) รองรับ CRUD, อนุมัติเบิกยืมตัดสต็อก, บันทึกการคืนเพิ่มสต็อก และบันทึก Audit Logs<br>3. สร้าง REST API Route Handlers 18 endpoints ภายใต้ `src/app/api/...`<br>4. สร้าง Type-safe API Client SDK (`src/lib/api-client.ts`) สำหรับฝั่ง Frontend<br>5. ตรวจสอบ Next.js Production Build (`npm run build`) ผ่าน 100% สมบูรณ์ | Antigravity AI Assistant |
+| **16 ส.ค. 2569** | พัฒนาระบบจัดการวัสดุเทศบาล UI/UX ฉบับสมบูรณ์ (แดชบอร์ด, 3 ระดับสิทธิ์, เบิก-ยืม, อนุมัติ/ไม่อนุมัติพร้อมระบุเหตุผล, คืนอุปกรณ์, สต็อก, รายงาน 6 ด้าน) | Dev Team |

@@ -30,6 +30,8 @@ const presetRejectReasons = [
   'ขอสงวนสิทธิ์การใช้งานสำหรับภารกิจฉุกเฉินของเทศบาล',
 ];
 
+import AccessDenied from '../components/AccessDenied';
+
 export default function ApprovalsPage() {
   const { requests, approveRequest, rejectRequest, cancelRequest, currentUser } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,6 +42,14 @@ export default function ApprovalsPage() {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const { showToast, ToastComponent } = useToast();
+
+  if (currentUser.role === 'เจ้าหน้าที่') {
+    return (
+      <AppLayout title="การอนุมัติคำขอ">
+        <AccessDenied requiredRoles={['ผู้ดูแลระบบ', 'ผู้อนุมัติ']} moduleName="การอนุมัติคำขอเบิก–ยืม" />
+      </AppLayout>
+    );
+  }
 
   const pendingList = requests.filter((a) => a.status === 'รออนุมัติ');
   const historyList = requests.filter((a) => a.status !== 'รออนุมัติ');

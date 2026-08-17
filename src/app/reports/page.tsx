@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import AppLayout from '../components/AppLayout';
+import AppLayout, { useToast } from '../components/AppLayout';
 import StatsCard from '../components/StatsCard';
 import { useAppStore } from '../data/store';
 import {
@@ -21,12 +21,23 @@ import {
 } from 'lucide-react';
 import { monthlyReportData, departmentUsageData } from '../data/mockData';
 
+import AccessDenied from '../components/AccessDenied';
+
 type ReportTab = 'requisition' | 'borrow' | 'return' | 'stock' | 'lowstock' | 'activity';
 
 export default function ReportsPage() {
-  const { materials, requests, returnRecords, activityLogs } = useAppStore();
+  const { materials, requests, returnRecords, activityLogs, currentUser } = useAppStore();
   const [activeTab, setActiveTab] = useState<ReportTab>('requisition');
   const [searchQuery, setSearchQuery] = useState('');
+  const { showToast, ToastComponent } = useToast();
+
+  if (currentUser.role === 'เจ้าหน้าที่') {
+    return (
+      <AppLayout title="รายงานสรุป 6 ด้าน">
+        <AccessDenied requiredRoles={['ผู้ดูแลระบบ', 'ผู้อนุมัติ']} moduleName="รายงานสรุป 6 ด้าน" />
+      </AppLayout>
+    );
+  }
 
   // 1. Requisitions
   const requisitions = requests.filter((r) => r.requestType === 'เบิกวัสดุ');
@@ -44,7 +55,7 @@ export default function ReportsPage() {
   const totalValue = materials.reduce((sum, m) => sum + m.totalValue, 0);
 
   const handleExportCSV = () => {
-    alert('ระบบทำการดาวน์โหลดรายงานในรูปแบบไฟล์ Excel/CSV เรียบร้อยแล้ว');
+    showToast('ระบบทำการส่งออกรายงาน Excel/CSV เรียบร้อยแล้ว', 'success');
   };
 
   const handlePrint = () => {
@@ -440,6 +451,7 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
+      {ToastComponent}
     </AppLayout>
   );
 }

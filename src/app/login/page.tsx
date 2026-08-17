@@ -2,37 +2,115 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, UserCheck, Users, Lock, User as UserIcon, ArrowRight, CheckCircle } from 'lucide-react';
+import { ShieldCheck, UserCheck, Users, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
 import { useAppStore } from '../data/store';
+import { mockUsers, type User } from '../data/mockData';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { users, setCurrentUser, switchRole } = useAppStore();
-  const [username, setUsername] = useState('');
+  const { users, setCurrentUser, addActivityLog, updateUser } = useAppStore();
+  const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const demoAccounts = [
+    {
+      role: 'ผู้ดูแลระบบ',
+      roleBadge: '1) ผู้ดูแลระบบ (Administrator)',
+      email: 'admin@rangsit.go.th',
+      name: 'สมชาย ใจดี',
+      department: 'กองช่าง',
+      icon: ShieldCheck,
+      color: '#2563eb',
+      bg: '#eff6ff',
+      border: '#93c5fd',
+    },
+    {
+      role: 'ผู้อนุมัติ',
+      roleBadge: '2) ผู้อนุมัติ (Approver)',
+      email: 'approver@rangsit.go.th',
+      name: 'ประยุทธ์ มั่นคง',
+      department: 'กองช่าง',
+      icon: UserCheck,
+      color: '#d97706',
+      bg: '#fffbeb',
+      border: '#fde68a',
+    },
+    {
+      role: 'เจ้าหน้าที่',
+      roleBadge: '3) เจ้าหน้าที่ผู้ใช้งาน (Staff)',
+      email: 'staff@rangsit.go.th',
+      name: 'วันทนา สุขกมล',
+      department: 'สำนักปลัด',
+      icon: Users,
+      color: '#0d9488',
+      bg: '#f0fdfa',
+      border: '#99f6e4',
+    },
+  ];
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username) {
-      setError('กรุณากรอกชื่อผู้ใช้');
+    if (!emailOrUsername.trim()) {
+      setError('กรุณากรอกอีเมลหรือชื่อผู้ใช้งาน');
       return;
     }
 
-    const found = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
+    setIsLoading(true);
+    setError('');
+
+    const query = emailOrUsername.trim().toLowerCase();
+    const allUsers = [...users, ...mockUsers];
+
+    // ลำดับที่ 1: ค้นหาจาก Email ที่ตรงกันทั้งหมด (Exact Email Match)
+    let found: User | undefined = allUsers.find((u) => u.email.toLowerCase() === query);
+
+    // ลำดับที่ 2: ค้นหาจาก Username ที่ตรงกัน (Exact Username Match)
+    if (!found) {
+      found = allUsers.find((u) => u.username.toLowerCase() === query);
+    }
+
+    // ลำดับที่ 3: ค้นหาจาก Role Alias เฉพาะผู้ใช้ที่สถานะ "ใช้งาน" เท่านั้น
+    if (!found) {
+      if (query === 'admin' || query.startsWith('admin@')) {
+        found = allUsers.find((u) => u.role === 'ผู้ดูแลระบบ' && u.status === 'ใช้งาน');
+      } else if (query === 'approver' || query.startsWith('approver@')) {
+        found = allUsers.find((u) => u.role === 'ผู้อนุมัติ' && u.status === 'ใช้งาน');
+      } else if (query === 'staff' || query.startsWith('staff@')) {
+        found = allUsers.find((u) => u.role === 'เจ้าหน้าที่' && u.status === 'ใช้งาน');
+      }
+    }
+
     if (found) {
+      if (found.status === 'ไม่ใช้งาน') {
+        setError('บัญชีผู้ใช้นี้ถูกปิดการใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
+        setIsLoading(false);
+        return;
+      }
+
       setCurrentUser(found);
-      router.push('/');
+      addActivityLog({
+        action: 'เข้าสู่ระบบ',
+        description: `${found.fullName} (${found.role}) เข้าสู่ระบบสำเร็จ`,
+        userName: found.fullName,
+        module: 'ระบบ',
+        type: 'เข้าสู่ระบบ',
+      });
+
+      setTimeout(() => {
+        router.push('/');
+      }, 200);
     } else {
-      // Fallback: login as first user
-      setCurrentUser(users[0]);
-      router.push('/');
+      setError('ไม่พบอีเมลหรือชื่อผู้ใช้งานนี้ในระบบ');
+      setIsLoading(false);
     }
   };
 
-  const handleQuickLogin = (role: 'ผู้ดูแลระบบ' | 'ผู้อนุมัติ' | 'เจ้าหน้าที่') => {
-    switchRole(role);
-    router.push('/');
+  const handleSelectDemoAccount = (email: string) => {
+    setEmailOrUsername(email);
+    setPassword('••••••••');
+    setError('');
   };
 
   return (
@@ -81,7 +159,7 @@ export default function LoginPage() {
           >
             🏛️
           </div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 6px' }}>เทศบาลเมืองรังสิต</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 6px' }}>เทศบาลนครรังสิต</h1>
           <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)', margin: 0 }}>
             ระบบจัดการวัสดุและครุภัณฑ์เทศบาล
           </p>
@@ -99,6 +177,7 @@ export default function LoginPage() {
                   borderRadius: '8px',
                   fontSize: '13px',
                   marginBottom: '16px',
+                  fontWeight: 500,
                 }}
               >
                 {error}
@@ -106,20 +185,21 @@ export default function LoginPage() {
             )}
 
             <div className="form-group">
-              <label>ชื่อผู้ใช้งาน (Username)</label>
+              <label>อีเมล หรือ ชื่อผู้ใช้งาน (Email / Username)</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="เช่น somchai.j"
-                  value={username}
+                  placeholder="เช่น admin@rangsit.go.th หรือ somchai.j"
+                  value={emailOrUsername}
                   onChange={(e) => {
-                    setUsername(e.target.value);
+                    setEmailOrUsername(e.target.value);
                     setError('');
                   }}
                   style={{ paddingLeft: '40px' }}
+                  autoFocus
                 />
-                <UserIcon
+                <Mail
                   size={18}
                   style={{ position: 'absolute', left: '12px', top: '12px', color: '#9ca3af' }}
                 />
@@ -146,85 +226,90 @@ export default function LoginPage() {
 
             <button
               type="submit"
+              disabled={isLoading}
               className="btn btn-primary"
-              style={{ width: '100%', padding: '12px', fontSize: '15px', justifyContent: 'center', marginTop: '8px' }}
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '15px',
+                justifyContent: 'center',
+                marginTop: '8px',
+                fontWeight: 600,
+              }}
             >
-              เข้าสู่ระบบ <ArrowRight size={18} />
+              {isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'} <ArrowRight size={18} />
             </button>
           </form>
 
-          {/* Quick Access for 3 Roles */}
-          <div style={{ marginTop: '28px', paddingTop: '24px', borderTop: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '12px', textAlign: 'center' }}>
-              หรือเลือกเข้าสู่ระบบด่วนตามบทบาท (3 ระดับ):
+          {/* Demo Accounts List */}
+          <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
+            <div
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#4b5563',
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+              }}
+            >
+              <Sparkles size={16} color="#d97706" /> บัญชีอีเมลสำหรับทดสอบแต่ละบทบาท:
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => handleQuickLogin('ผู้ดูแลระบบ')}
-                style={{
-                  justifyContent: 'flex-start',
-                  padding: '10px 14px',
-                  borderColor: '#93c5fd',
-                  background: '#eff6ff',
-                }}
-              >
-                <ShieldCheck size={18} style={{ color: '#2563eb' }} />
-                <div style={{ textAlign: 'left', flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e40af' }}>
-                    1) ผู้ดูแลระบบ (Administrator)
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                    สมชาย ใจดี • จัดการผู้ใช้, หมวดหมู่, สิทธิ์, วัสดุ, สต็อก
-                  </div>
-                </div>
-              </button>
+              {demoAccounts.map((acc) => {
+                const Icon = acc.icon;
+                const isSelected = emailOrUsername === acc.email;
 
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => handleQuickLogin('ผู้อนุมัติ')}
-                style={{
-                  justifyContent: 'flex-start',
-                  padding: '10px 14px',
-                  borderColor: '#fde68a',
-                  background: '#fffbeb',
-                }}
-              >
-                <UserCheck size={18} style={{ color: '#d97706' }} />
-                <div style={{ textAlign: 'left', flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#92400e' }}>
-                    2) ผู้อนุมัติ (Approver)
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                    ประยุทธ์ มั่นคง • ตรวจสอบคำขอเบิก–ยืม, อนุมัติ/ไม่อนุมัติ
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => handleQuickLogin('เจ้าหน้าที่')}
-                style={{
-                  justifyContent: 'flex-start',
-                  padding: '10px 14px',
-                  borderColor: '#99f6e4',
-                  background: '#f0fdfa',
-                }}
-              >
-                <Users size={18} style={{ color: '#0d9488' }} />
-                <div style={{ textAlign: 'left', flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#115e59' }}>
-                    3) เจ้าหน้าที่ผู้ใช้งาน (Staff)
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                    วันทนา สุขกมล • ค้นหาวัสดุ, ส่งคำขอเบิก/ยืม, บันทึกคืน
-                  </div>
-                </div>
-              </button>
+                return (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => handleSelectDemoAccount(acc.email)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: `1.5px solid ${isSelected ? acc.color : acc.border}`,
+                      background: isSelected ? acc.bg : '#fafafa',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease',
+                      width: '100%',
+                    }}
+                  >
+                    <Icon size={20} style={{ color: acc.color, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
+                        {acc.roleBadge}
+                      </div>
+                      <div style={{ fontSize: '12px', color: acc.color, fontWeight: 500, fontFamily: 'monospace' }}>
+                        {acc.email}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                        {acc.name} • {acc.department}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        background: isSelected ? acc.color : '#e5e7eb',
+                        color: isSelected ? 'white' : '#374151',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {isSelected ? 'เลือกแล้ว' : 'กรอกอีเมลนี้'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

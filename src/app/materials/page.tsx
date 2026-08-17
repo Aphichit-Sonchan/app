@@ -18,6 +18,7 @@ import {
   DollarSign,
   Image as ImageIcon,
   PlusCircle,
+  Eye,
 } from 'lucide-react';
 import { Material } from '../data/mockData';
 
@@ -47,22 +48,41 @@ const presetMaterialIcons: Record<string, string> = {
 
 const units = ['ชิ้น', 'อัน', 'ตัว', 'รีม', 'ด้าม', 'หลอด', 'ถุง', 'ท่อน', 'ตลับ', 'แกลลอน', 'เมตร', 'คิว', 'แฟ้ม', 'กล่อง', 'ชุด'];
 
+import AccessDenied from '../components/AccessDenied';
+
 export default function MaterialsPage() {
-  const { materials, categories, addMaterial, updateMaterial, deleteMaterial, restockMaterial } = useAppStore();
+  const { materials, categories, addMaterial, updateMaterial, deleteMaterial, restockMaterial, currentUser } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(null);
   const [selectedForRestock, setSelectedForRestock] = useState<Material | null>(null);
+  const [selectedDetailMaterial, setSelectedDetailMaterial] = useState<Material | null>(null);
   const [restockQty, setRestockQty] = useState(10);
   const [restockReason, setRestockReason] = useState('สั่งซื้อเพิ่มประจำงวด');
   const [formData, setFormData] = useState(emptyMaterial);
   const [selectedImageEmoji, setSelectedImageEmoji] = useState('📦');
   const { showToast, ToastComponent } = useToast();
+
+  const handleOpenDetail = (material: Material) => {
+    setSelectedDetailMaterial(material);
+    setIsDetailModalOpen(true);
+  };
+
+  if (currentUser.role === 'เจ้าหน้าที่') {
+    return (
+      <AppLayout title="จัดการข้อมูลวัสดุและครุภัณฑ์">
+        <AccessDenied requiredRoles={['ผู้ดูแลระบบ', 'ผู้อนุมัติ']} moduleName="จัดการข้อมูลวัสดุและครุภัณฑ์" />
+      </AppLayout>
+    );
+  }
+
+  const isAdmin = currentUser.role === 'ผู้ดูแลระบบ';
 
   const filteredMaterials = materials.filter((m) => {
     const matchSearch =
@@ -179,12 +199,18 @@ export default function MaterialsPage() {
         <div className="page-header-row">
           <div>
             <h1>จัดการข้อมูลวัสดุและครุภัณฑ์</h1>
-            <p>เพิ่ม แก้ไข ลบ เติมสต็อก และจัดการข้อมูลรายการวัสดุอุปกรณ์ของเทศบาล</p>
+            <p>
+              {isAdmin
+                ? 'เพิ่ม แก้ไข ลบ เติมสต็อก และจัดการข้อมูลรายการวัสดุอุปกรณ์ของเทศบาล'
+                : 'ตรวจสอบข้อมูลและรายละเอียดสเปกรายการวัสดุอุปกรณ์ของเทศบาล (โหมดดูข้อมูล)'}
+            </p>
           </div>
-          <button className="btn btn-primary" onClick={handleAdd}>
-            <Plus size={18} />
-            เพิ่มวัสดุใหม่
-          </button>
+          {isAdmin && (
+            <button className="btn btn-primary" onClick={handleAdd}>
+              <Plus size={18} />
+              เพิ่มวัสดุใหม่
+            </button>
+          )}
         </div>
       </div>
 
@@ -318,33 +344,45 @@ export default function MaterialsPage() {
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '4px' }}>
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                         <button
                           className="btn btn-ghost btn-sm"
-                          onClick={() => handleOpenRestock(material)}
-                          title="เติมสต็อก"
-                          style={{ color: '#059669' }}
+                          onClick={() => handleOpenDetail(material)}
+                          title="ดูรายละเอียดข้อมูลวัสดุ"
+                          style={{ color: '#2563eb', background: '#eff6ff' }}
                         >
-                          <PlusCircle size={15} /> เติมสต็อก
+                          <Eye size={14} /> ดูข้อมูล
                         </button>
-                        <button
-                          className="btn btn-ghost btn-icon"
-                          onClick={() => handleEdit(material)}
-                          title="แก้ไข"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          className="btn btn-ghost btn-icon"
-                          onClick={() => {
-                            setDeletingMaterial(material);
-                            setIsDeleteModalOpen(true);
-                          }}
-                          title="ลบ"
-                          style={{ color: 'var(--danger-500)' }}
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => handleOpenRestock(material)}
+                              title="เติมสต็อก"
+                              style={{ color: '#059669' }}
+                            >
+                              <PlusCircle size={14} /> เติมสต็อก
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-icon"
+                              onClick={() => handleEdit(material)}
+                              title="แก้ไข"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-icon"
+                              onClick={() => {
+                                setDeletingMaterial(material);
+                                setIsDeleteModalOpen(true);
+                              }}
+                              title="ลบ"
+                              style={{ color: 'var(--danger-500)' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -601,6 +639,124 @@ export default function MaterialsPage() {
           <h3>ต้องการลบรายการนี้?</h3>
           <p>คุณกำลังจะลบ <strong>{deletingMaterial?.name}</strong> ({deletingMaterial?.code})</p>
         </div>
+      </Modal>
+
+      {/* Modal ดูรายละเอียดวัสดุ */}
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        title="รายละเอียดข้อมูลวัสดุและอุปกรณ์"
+        maxWidth="560px"
+        footer={
+          <button className="btn btn-primary" onClick={() => setIsDetailModalOpen(false)}>
+            ปิดหน้าต่าง
+          </button>
+        }
+      >
+        {selectedDetailMaterial && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '16px',
+                background: '#f8fafc',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '12px',
+                  background: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '28px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                {presetMaterialIcons[selectedDetailMaterial.categoryName] || '📦'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary-600)' }}>
+                  {selectedDetailMaterial.code}
+                </div>
+                <div style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
+                  {selectedDetailMaterial.name}
+                </div>
+                <div style={{ fontSize: '13px', color: '#64748b' }}>
+                  {selectedDetailMaterial.categoryName}
+                </div>
+              </div>
+              <div>
+                <span className={`badge ${getStatusBadge(selectedDetailMaterial.status)}`}>
+                  {selectedDetailMaterial.status}
+                </span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '12px',
+              }}
+            >
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>จำนวนคงเหลือ</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+                  {selectedDetailMaterial.quantity} <span style={{ fontSize: '13px', fontWeight: 400 }}>{selectedDetailMaterial.unit}</span>
+                </div>
+              </div>
+
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>เกณฑ์ขั้นต่ำแจ้งเตือน</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>
+                  {selectedDetailMaterial.minQuantity} <span style={{ fontSize: '13px', fontWeight: 400 }}>{selectedDetailMaterial.unit}</span>
+                </div>
+              </div>
+
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>ราคาต่อหน่วย</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#059669' }}>
+                  ฿{selectedDetailMaterial.pricePerUnit.toLocaleString('th-TH')}
+                </div>
+              </div>
+
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>มูลค่าคงคลังรวม</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#059669' }}>
+                  ฿{selectedDetailMaterial.totalValue.toLocaleString('th-TH')}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>สถานที่จัดเก็บ</div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+                📍 {selectedDetailMaterial.location || 'คลังหลัก เทศบาลนครรังสิต'}
+              </div>
+            </div>
+
+            {selectedDetailMaterial.description && (
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>รายละเอียดและสเปกอุปกรณ์</div>
+                <div style={{ fontSize: '13px', color: '#475569', lineHeight: '1.5' }}>
+                  {selectedDetailMaterial.description}
+                </div>
+              </div>
+            )}
+
+            <div style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right' }}>
+              อัปเดตล่าสุด: {selectedDetailMaterial.lastUpdated || '-'}
+            </div>
+          </div>
+        )}
       </Modal>
 
       {ToastComponent}

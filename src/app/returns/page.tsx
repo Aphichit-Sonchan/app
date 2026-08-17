@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function ReturnsPage() {
-  const { requests, returnRecords, processReturn } = useAppStore();
+  const { requests, returnRecords, processReturn, currentUser } = useAppStore();
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EnhancedRequest | null>(null);
   const [returnQty, setReturnQty] = useState(1);
@@ -191,12 +191,16 @@ export default function ReturnsPage() {
                       <span className="badge badge-warning">กำลังยืม</span>
                     </td>
                     <td>
-                      <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => handleOpenReturnModal(req)}
-                      >
-                        <RotateCcw size={14} /> บันทึกรับคืน
-                      </button>
+                      {(currentUser.role !== 'เจ้าหน้าที่' || req.requesterId === currentUser.id || req.requesterName === currentUser.fullName) ? (
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={() => handleOpenReturnModal(req)}
+                        >
+                          <RotateCcw size={14} /> {currentUser.role === 'เจ้าหน้าที่' ? 'ส่งคืนอุปกรณ์' : 'บันทึกรับคืน'}
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>รอผู้ยืมส่งคืน</span>
+                      )}
                     </td>
                   </tr>
                 ))}

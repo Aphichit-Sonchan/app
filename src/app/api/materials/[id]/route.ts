@@ -1,0 +1,90 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { serverRepository } from '@/lib/server/repository';
+import { ApiResponse, UpdateMaterialDto } from '@/lib/types/api';
+import { Material } from '@/app/data/mockData';
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const material = serverRepository.getMaterialById(id);
+
+    if (!material) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'ไม่พบข้อมูลวัสดุ' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json<ApiResponse<Material>>({
+      success: true,
+      data: material,
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการดึงข้อมูลวัสดุ';
+    return NextResponse.json<ApiResponse>(
+      { success: false, error: msg },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = (await req.json()) as UpdateMaterialDto;
+
+    const updatedMaterial = serverRepository.updateMaterial(id, body);
+    if (!updatedMaterial) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'ไม่พบวัสดุที่ต้องการแก้ไข' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json<ApiResponse<Material>>({
+      success: true,
+      message: 'แก้ไขข้อมูลวัสดุสำเร็จ',
+      data: updatedMaterial,
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการแก้ไขวัสดุ';
+    return NextResponse.json<ApiResponse>(
+      { success: false, error: msg },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const ok = serverRepository.deleteMaterial(id);
+
+    if (!ok) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'ไม่พบวัสดุที่ต้องการลบ' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json<ApiResponse>({
+      success: true,
+      message: 'ลบข้อมูลวัสดุสำเร็จ',
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบวัสดุ';
+    return NextResponse.json<ApiResponse>(
+      { success: false, error: msg },
+      { status: 500 }
+    );
+  }
+}

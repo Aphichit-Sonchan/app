@@ -12,13 +12,22 @@ import {
   ChevronRight,
   ShieldCheck,
 } from 'lucide-react';
+import AccessDenied from '../components/AccessDenied';
 
 export default function HistoryPage() {
-  const { activityLogs } = useAppStore();
+  const { activityLogs, currentUser } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterModule, setFilterModule] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  if (currentUser.role !== 'ผู้ดูแลระบบ') {
+    return (
+      <AppLayout title="ประวัติการใช้งาน">
+        <AccessDenied requiredRoles={['ผู้ดูแลระบบ']} moduleName="ประวัติการใช้งาน (Audit Trail)" />
+      </AppLayout>
+    );
+  }
 
   const itemsPerPage = 10;
 

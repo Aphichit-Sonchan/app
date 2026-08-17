@@ -1,13 +1,152 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Prisma Schema สำหรับระบบจัดการวัสดุเทศบาล (Municipal Equipment Management System)
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// ผู้ใช้งานระบบ (User)
+// -------------------------------------------------------------
+model User {
+  id          String   @id @default(uuid())
+  fullName    String
+  username    String   @unique
+  password    String?  // Hash ด้วย bcryptjs เมื่อต่อ DB จริง
+  email       String   @unique
+  department  String
+  role        String   @default("เจ้าหน้าที่") // ผู้ดูแลระบบ, ผู้อนุมัติ, เจ้าหน้าที่
+  status      String   @default("ใช้งาน") // ใช้งาน, ไม่ใช้งาน
+  lastLogin   String   @default("-")
+  avatar      String?
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ความสัมพันธ์
+  requests        Request[]        @relation("UserRequests")
+  approvedRequests Request[]       @relation("ApprovedRequests")
+  returnRecords   ReturnRecord[]   @relation("ReceivedReturns")
+  activityLogs    ActivityLog[]
+
+  @@map("users")
+}
+
+// -------------------------------------------------------------
+// หมวดหมู่วัสดุ (Category)
+// -------------------------------------------------------------
+model Category {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  icon        String     @default("📦")
+  status      String     @default("ใช้งาน") // ใช้งาน, ไม่ใช้งาน
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  materials   Material[]
+
+  @@map("categories")
+}
+
+// -------------------------------------------------------------
+// วัสดุและครุภัณฑ์ (Material)
+// -------------------------------------------------------------
+model Material {
+  id           String    @id @default(uuid())
+  code         String    @unique
+  name         String
+  categoryId   String
+  category     Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  unit         String
+  quantity     Int       @default(0)
+  minQuantity  Int       @default(10)
+  pricePerUnit Float     @default(0.0)
+  location     String?
+  description  String?
+  status       String    @default("มีสต็อก") // มีสต็อก, ใกล้หมด, หมดสต็อก
+  lastUpdated  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  requests     Request[]
+
+  @@map("materials")
+}
+
+// -------------------------------------------------------------
+// คำขอเบิก - ยืมวัสดุ (Request)
+// -------------------------------------------------------------
+model Request {
+  id                 String         @id @default(uuid())
+  requestCode        String         @unique
+  requestType        String         // เบิกวัสดุ, ยืมวัสดุ
+  requesterId        String
+  requester          User           @relation("UserRequests", fields: [requesterId], references: [id])
+  materialId         String
+  material           Material       @relation(fields: [materialId], references: [id])
+  quantity           Int
+  unit               String
+  reason             String
+  status             String         @default("รออนุมัติ") // รออนุมัติ, อนุมัติแล้ว, ไม่อนุมัติ, กำลังยืม, คืนแล้ว, ยกเลิกแล้ว
+  requestDate        DateTime       @default(now())
+  borrowDate         DateTime?
+  expectedReturnDate DateTime?
+  actualReturnDate   DateTime?
+  returnedQuantity   Int?
+  returnCondition    String?        // สมบูรณ์, ชำรุด, สูญหาย
+  returnNotes        String?
+  approvedById       String?
+  approver           User?          @relation("ApprovedRequests", fields: [approvedById], references: [id])
+  approvedDate       DateTime?
+  rejectReason       String?
+  cancelledById      String?
+  cancelledDate      DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  returnRecords      ReturnRecord[]
+
+  @@map("requests")
+}
+
+// -------------------------------------------------------------
+// บันทึกการส่งคืนวัสดุ (ReturnRecord)
+// -------------------------------------------------------------
+model ReturnRecord {
+  id               String   @id @default(uuid())
+  requestId        String
+  request          Request  @relation(fields: [requestId], references: [id])
+  borrowedQuantity Int
+  returnedQuantity Int
+  returnDate       DateTime @default(now())
+  condition        String   @default("สมบูรณ์") // สมบูรณ์, ชำรุด, สูญหาย
+  receivedById     String
+  receiver         User     @relation("ReceivedReturns", fields: [receivedById], references: [id])
+  notes            String?
+  createdAt        DateTime @default(now())
+
+  @@map("return_records")
+}
+
+// -------------------------------------------------------------
+// บันทึกประวัติการใช้งาน (ActivityLog / Audit Trail)
+// -------------------------------------------------------------
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName    String
+  action      String
+  description String
+  module      String
+  type        String   // สร้าง, แก้ไข, ลบ, เข้าสู่ระบบ, อนุมัติ, เบิกจ่าย
+  ipAddress   String?  @default("127.0.0.1")
+  timestamp   DateTime @default(now())
+
+  @@map("activity_logs")
 }

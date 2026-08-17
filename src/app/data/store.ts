@@ -627,7 +627,8 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'rangsit-municipality-store',
+      name: 'rangsit-municipality-store-v2',
+      version: 2,
     }
   )
 );

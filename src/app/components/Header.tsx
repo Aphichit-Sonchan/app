@@ -12,7 +12,7 @@ interface HeaderProps {
 }
 
 export default function Header({ title = 'ระบบจัดการวัสดุเทศบาล' }: HeaderProps) {
-  const { currentUser, switchRole, changePassword, requests } = useAppStore();
+  const { currentUser, changePassword, requests } = useAppStore();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -71,19 +71,6 @@ export default function Header({ title = 'ระบบจัดการวั�
             <Search size={16} />
             <input type="text" placeholder="ค้นหารายการ, วัสดุ, ผู้ใช้งาน..." />
           </div>
-
-          {/* Role selector dropdown */}
-          <select
-            className="form-control"
-            style={{ width: '130px', padding: '6px 8px', fontSize: '13px', height: '36px' }}
-            value={currentUser.role}
-            onChange={(e) => switchRole(e.target.value as any)}
-            title="เปลี่ยนบทบาทผู้ใช้"
-          >
-            <option value="ผู้ดูแลระบบ">ผู้ดูแลระบบ</option>
-            <option value="ผู้อนุมัติ">ผู้อนุมัติ</option>
-            <option value="เจ้าหน้าที่">เจ้าหน้าที่</option>
-          </select>
 
           {/* Notifications button */}
           <div style={{ position: 'relative' }}>

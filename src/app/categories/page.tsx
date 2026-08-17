@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Category } from '../data/mockData';
 
+import AccessDenied from '../components/AccessDenied';
+
 const emptyCategory: { name: string; description: string; icon: string; status: Category['status'] } = {
   name: '',
   description: '',
@@ -26,7 +28,7 @@ const emptyCategory: { name: string; description: string; icon: string; status: 
 const iconOptions = ['📋', '⚡', '🏗️', '🔧', '💻', '🧹', '🌱', '🚗', '📦', '🛠️', '🔩', '💡'];
 
 export default function CategoriesPage() {
-  const { categories, materials, addCategory, updateCategory, deleteCategory } = useAppStore();
+  const { categories, materials, addCategory, updateCategory, deleteCategory, currentUser } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -34,6 +36,14 @@ export default function CategoriesPage() {
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState(emptyCategory);
   const { showToast, ToastComponent } = useToast();
+
+  if (currentUser.role !== 'ผู้ดูแลระบบ') {
+    return (
+      <AppLayout title="หมวดหมู่วัสดุ">
+        <AccessDenied requiredRoles={['ผู้ดูแลระบบ']} moduleName="หมวดหมู่วัสดุ" />
+      </AppLayout>
+    );
+  }
 
   const filteredCategories = categories.filter(
     (cat) =>

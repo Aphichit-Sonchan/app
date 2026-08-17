@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { departments, type User } from '../data/mockData';
 
+import AccessDenied from '../components/AccessDenied';
+
 const emptyUser: Omit<User, 'id' | 'avatar' | 'createdAt' | 'lastLogin'> = {
   fullName: '',
   username: '',
@@ -32,7 +34,7 @@ const emptyUser: Omit<User, 'id' | 'avatar' | 'createdAt' | 'lastLogin'> = {
 };
 
 export default function UsersPage() {
-  const { users, addUser, updateUser, deleteUser } = useAppStore();
+  const { users, addUser, updateUser, deleteUser, currentUser } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,6 +44,14 @@ export default function UsersPage() {
   const [formData, setFormData] = useState(emptyUser);
   const [currentPage, setCurrentPage] = useState(1);
   const { showToast, ToastComponent } = useToast();
+
+  if (currentUser.role !== 'ผู้ดูแลระบบ') {
+    return (
+      <AppLayout title="การจัดการผู้ใช้งาน">
+        <AccessDenied requiredRoles={['ผู้ดูแลระบบ']} moduleName="การจัดการผู้ใช้งาน" />
+      </AppLayout>
+    );
+  }
 
   const itemsPerPage = 10;
 

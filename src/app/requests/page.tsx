@@ -22,13 +22,17 @@ import {
   Filter,
   Eye,
   MessageSquareWarning,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 
 export default function RequestsPage() {
   const { currentUser, materials, requests, createRequest, cancelRequest } = useAppStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedDetailRequest, setSelectedDetailRequest] = useState<EnhancedRequest | null>(null);
+  const [selectedCancelRequest, setSelectedCancelRequest] = useState<EnhancedRequest | null>(null);
 
   const [selectedMaterialId, setSelectedMaterialId] = useState('');
   const [requestType, setRequestType] = useState<RequestType>('เบิกวัสดุ');
@@ -83,6 +87,19 @@ export default function RequestsPage() {
     setIsDetailModalOpen(true);
   };
 
+  const handleOpenCancelModal = (req: EnhancedRequest) => {
+    setSelectedCancelRequest(req);
+    setIsCancelModalOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (!selectedCancelRequest) return;
+    cancelRequest(selectedCancelRequest.id);
+    showToast(`ยกเลิกคำขอ ${selectedCancelRequest.requestCode} สำเร็จเรียบร้อยแล้ว`, 'info');
+    setIsCancelModalOpen(false);
+    setSelectedCancelRequest(null);
+  };
+
   const handleCreateRequest = () => {
     if (!selectedMaterialId) {
       showToast('กรุณาเลือกวัสดุอุปกรณ์', 'error');
@@ -112,13 +129,6 @@ export default function RequestsPage() {
 
     showToast(`ส่งคำขอ${requestType}สำเร็จเรียบร้อยแล้ว`, 'success');
     setIsModalOpen(false);
-  };
-
-  const handleCancel = (id: string) => {
-    if (confirm('คุณต้องการยกเลิกคำขอนี้ใช่หรือไม่?')) {
-      cancelRequest(id);
-      showToast('ยกเลิกคำขอเรียบร้อยแล้ว', 'info');
-    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -382,14 +392,14 @@ export default function RequestsPage() {
                       >
                         <Eye size={14} /> รายละเอียด
                       </button>
-                      {req.status === 'รออนุมัติ' && (
+                      {req.status === 'รออนุมัติ' && (req.requesterId === currentUser.id || req.requesterName === currentUser.fullName || currentUser.role === 'ผู้ดูแลระบบ') && (
                         <button
                           className="btn btn-ghost btn-sm"
-                          onClick={() => handleCancel(req.id)}
+                          onClick={() => handleOpenCancelModal(req)}
                           title="ยกเลิกคำขอนี้"
-                          style={{ color: '#dc2626' }}
+                          style={{ color: '#dc2626', background: '#fef2f2' }}
                         >
-                          <Ban size={14} /> ยกเลิก
+                          <X size={14} /> ยกเลิก
                         </button>
                       )}
                     </div>
@@ -620,6 +630,80 @@ export default function RequestsPage() {
             onChange={(e) => setReason(e.target.value)}
           />
         </div>
+      </Modal>
+
+      {/* Modal ยืนยันการยกเลิกคำขอ */}
+      <Modal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        title="ยืนยันการยกเลิกคำขอ"
+        maxWidth="460px"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', width: '100%' }}>
+            <button className="btn btn-outline" onClick={() => setIsCancelModalOpen(false)}>
+              ย้อนกลับ
+            </button>
+            <button className="btn btn-danger" onClick={handleConfirmCancel}>
+              <X size={16} /> ยืนยันยกเลิกคำขอ
+            </button>
+          </div>
+        }
+      >
+        {selectedCancelRequest && (
+          <div style={{ textAlign: 'center', padding: '8px 0' }}>
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: '#fee2e2',
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+              }}
+            >
+              <AlertTriangle size={32} />
+            </div>
+
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>
+              ต้องการยกเลิกคำขอนี้ใช่หรือไม่?
+            </h3>
+
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px', lineHeight: '1.5' }}>
+              หากยกเลิกแล้ว คำขอนี้จะถูกเปลี่ยนสถานะเป็น &ldquo;ยกเลิกแล้ว&rdquo; และไม่สามารถนำกลับมาแก้ไขหรือส่งพิจารณาใหม่ได้
+            </p>
+
+            <div
+              style={{
+                background: '#f8fafc',
+                borderRadius: '10px',
+                padding: '14px',
+                border: '1px solid #e2e8f0',
+                textAlign: 'left',
+                fontSize: '13px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#64748b' }}>รหัสคำขอ:</span>
+                <strong style={{ color: 'var(--primary-600)' }}>{selectedCancelRequest.requestCode}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#64748b' }}>รายการวัสดุ:</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedCancelRequest.materialName}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#64748b' }}>ประเภทและจำนวน:</span>
+                <span style={{ color: '#d97706', fontWeight: 600 }}>{selectedCancelRequest.requestType} ({selectedCancelRequest.quantity} {selectedCancelRequest.unit})</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>ผู้ส่งคำขอ:</span>
+                <span>{selectedCancelRequest.requesterName} ({selectedCancelRequest.department})</span>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {ToastComponent}

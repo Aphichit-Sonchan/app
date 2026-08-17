@@ -67,6 +67,17 @@ export interface ActivityLog {
   type: 'สร้าง' | 'แก้ไข' | 'ลบ' | 'เข้าสู่ระบบ' | 'อนุมัติ' | 'เบิกจ่าย';
 }
 
+export const presetMaterialIcons: Record<string, string> = {
+  'วัสดุสำนักงาน': '📋',
+  'วัสดุไฟฟ้า': '⚡',
+  'วัสดุก่อสร้าง': '🏗️',
+  'วัสดุประปา': '🔧',
+  'วัสดุคอมพิวเตอร์': '💻',
+  'วัสดุทำความสะอาด': '🧹',
+  'วัสดุการเกษตร': '🌱',
+  'วัสดุยานพาหนะ': '🚗',
+};
+
 // =============================================
 // ข้อมูลผู้ใช้งาน
 // =============================================
@@ -74,8 +85,8 @@ export const mockUsers: User[] = [
   {
     id: '1',
     fullName: 'สมชาย ใจดี',
-    username: 'somchai.j',
-    email: 'somchai.j@rangsit.go.th',
+    username: 'admin',
+    email: 'admin@rangsit.go.th',
     department: 'กองช่าง (Public Works)',
     role: 'ผู้ดูแลระบบ',
     status: 'ใช้งาน',
@@ -87,8 +98,8 @@ export const mockUsers: User[] = [
   {
     id: '2',
     fullName: 'วันทนา สุขกมล',
-    username: 'wantana.s',
-    email: 'wantana.s@rangsit.go.th',
+    username: 'staff',
+    email: 'staff@rangsit.go.th',
     department: 'สำนักปลัด (Office of the Palad)',
     role: 'เจ้าหน้าที่',
     status: 'ใช้งาน',
@@ -126,8 +137,8 @@ export const mockUsers: User[] = [
   {
     id: '5',
     fullName: 'ประยุทธ์ มั่นคง',
-    username: 'prayuth.m',
-    email: 'prayuth.m@rangsit.go.th',
+    username: 'approver',
+    email: 'approver@rangsit.go.th',
     department: 'กองช่าง (Public Works)',
     role: 'ผู้อนุมัติ',
     status: 'ใช้งาน',

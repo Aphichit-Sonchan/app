@@ -16,18 +16,30 @@ import {
   PlusCircle,
   TrendingDown,
   Layers,
+  Eye,
+  Info,
+  Calendar,
+  Tag,
 } from 'lucide-react';
-import { Material } from '../data/mockData';
+import { Material, presetMaterialIcons } from '../data/mockData';
 
 export default function InventoryPage() {
-  const { materials, restockMaterial } = useAppStore();
+  const { materials, restockMaterial, currentUser } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const isAdmin = currentUser.role === 'ผู้ดูแลระบบ';
   const [filterStatus, setFilterStatus] = useState('');
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [selectedDetailMaterial, setSelectedDetailMaterial] = useState<Material | null>(null);
   const [restockQty, setRestockQty] = useState(10);
   const [restockReason, setRestockReason] = useState('เติมสต็อกด่วนเนื่องจากใกล้หมด');
   const { showToast, ToastComponent } = useToast();
+
+  const handleOpenDetail = (material: Material) => {
+    setSelectedDetailMaterial(material);
+    setIsDetailModalOpen(true);
+  };
 
   const filteredMaterials = materials.filter((m) => {
     const matchSearch =
@@ -225,13 +237,26 @@ export default function InventoryPage() {
                       <span className={`badge ${getStatusBadge(m.status)}`}>{m.status}</span>
                     </td>
                     <td>
-                      <button
-                        className="btn btn-sm btn-outline"
-                        style={{ color: '#059669', borderColor: '#10b981' }}
-                        onClick={() => handleOpenRestock(m)}
-                      >
-                        <PlusCircle size={14} /> เติมสต็อก
-                      </button>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <button
+                          className="btn btn-sm btn-outline"
+                          style={{ color: '#2563eb', borderColor: '#bfdbfe', background: '#eff6ff' }}
+                          onClick={() => handleOpenDetail(m)}
+                          title="ดูรายละเอียดข้อมูลวัสดุ"
+                        >
+                          <Eye size={14} /> ดูข้อมูล
+                        </button>
+                        {isAdmin && (
+                          <button
+                            className="btn btn-sm btn-outline"
+                            style={{ color: '#059669', borderColor: '#a7f3d0', background: '#ecfdf5' }}
+                            onClick={() => handleOpenRestock(m)}
+                            title="เติมสต็อก"
+                          >
+                            <PlusCircle size={14} /> เติมสต็อก
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -247,6 +272,124 @@ export default function InventoryPage() {
           </div>
         )}
       </div>
+
+      {/* Modal ดูรายละเอียดวัสดุ */}
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        title="รายละเอียดข้อมูลวัสดุและอุปกรณ์"
+        maxWidth="560px"
+        footer={
+          <button className="btn btn-primary" onClick={() => setIsDetailModalOpen(false)}>
+            ปิดหน้าต่าง
+          </button>
+        }
+      >
+        {selectedDetailMaterial && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '16px',
+                background: '#f8fafc',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '12px',
+                  background: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '28px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                {presetMaterialIcons[selectedDetailMaterial.categoryName] || '📦'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary-600)' }}>
+                  {selectedDetailMaterial.code}
+                </div>
+                <div style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
+                  {selectedDetailMaterial.name}
+                </div>
+                <div style={{ fontSize: '13px', color: '#64748b' }}>
+                  {selectedDetailMaterial.categoryName}
+                </div>
+              </div>
+              <div>
+                <span className={`badge ${getStatusBadge(selectedDetailMaterial.status)}`}>
+                  {selectedDetailMaterial.status}
+                </span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '12px',
+              }}
+            >
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>จำนวนคงเหลือ</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+                  {selectedDetailMaterial.quantity} <span style={{ fontSize: '13px', fontWeight: 400 }}>{selectedDetailMaterial.unit}</span>
+                </div>
+              </div>
+
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>เกณฑ์ขั้นต่ำแจ้งเตือน</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>
+                  {selectedDetailMaterial.minQuantity} <span style={{ fontSize: '13px', fontWeight: 400 }}>{selectedDetailMaterial.unit}</span>
+                </div>
+              </div>
+
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>ราคาต่อหน่วย</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#059669' }}>
+                  ฿{selectedDetailMaterial.pricePerUnit.toLocaleString('th-TH')}
+                </div>
+              </div>
+
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>มูลค่าคงคลังรวม</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#059669' }}>
+                  ฿{selectedDetailMaterial.totalValue.toLocaleString('th-TH')}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>สถานที่จัดเก็บ</div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+                📍 {selectedDetailMaterial.location || 'คลังหลัก เทศบาลนครรังสิต'}
+              </div>
+            </div>
+
+            {selectedDetailMaterial.description && (
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>รายละเอียดและสเปกอุปกรณ์</div>
+                <div style={{ fontSize: '13px', color: '#475569', lineHeight: '1.5' }}>
+                  {selectedDetailMaterial.description}
+                </div>
+              </div>
+            )}
+
+            <div style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right' }}>
+              อัปเดตล่าสุด: {selectedDetailMaterial.lastUpdated || '-'}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Modal เติมสต็อก */}
       <Modal

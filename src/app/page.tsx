@@ -21,7 +21,7 @@ import {
 import { monthlyReportData, departmentUsageData } from './data/mockData';
 
 export default function DashboardPage() {
-  const { users, categories, materials, requests, activityLogs, currentUser, switchRole } = useAppStore();
+  const { users, categories, materials, requests, activityLogs, currentUser } = useAppStore();
 
   const totalUsers = users.length;
   const activeUsers = users.filter((u) => u.status === 'ใช้งาน').length;
@@ -41,7 +41,7 @@ export default function DashboardPage() {
         <div className="page-header-row">
           <div>
             <h1>แดชบอร์ดภาพรวมระบบ</h1>
-            <p>เทศบาลเมืองรังสิต • ยินดีต้อนรับคุณ {currentUser.fullName} ({currentUser.role})</p>
+            <p>เทศบาลนครรังสิต • ยินดีต้อนรับคุณ {currentUser.fullName} ({currentUser.role})</p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <Link href="/requests" className="btn btn-primary">
@@ -54,7 +54,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Role Switcher Banner */}
+      {/* Welcome & Info Card */}
       <div
         style={{
           background: 'linear-gradient(135deg, #1e3a5f, #0f1724)',
@@ -89,57 +89,27 @@ export default function DashboardPage() {
           </div>
           <div>
             <div style={{ fontSize: '18px', fontWeight: 700 }}>
-              ระบบแบ่งผู้ใช้งานออกเป็น 3 ระดับ
+              ระบบจัดการวัสดุและครุภัณฑ์ เทศบาลนครรังสิต
             </div>
             <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
-              คุณกำลังเข้าสู่ระบบในสิทธิ์: <strong style={{ color: '#93c5fd' }}>{currentUser.role}</strong> ({currentUser.fullName} - {currentUser.department})
+              เข้าสู่ระบบในชื่อ: <strong style={{ color: '#93c5fd' }}>{currentUser.fullName}</strong> • บทบาท: <span style={{ color: '#fde68a', fontWeight: 600 }}>{currentUser.role}</span> ({currentUser.department})
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="btn"
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
             style={{
-              background: currentUser.role === 'ผู้ดูแลระบบ' ? '#2563eb' : 'rgba(255,255,255,0.1)',
-              color: 'white',
-              border: currentUser.role === 'ผู้ดูแลระบบ' ? '1px solid #60a5fa' : '1px solid rgba(255,255,255,0.2)',
               fontSize: '12px',
-              padding: '8px 14px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: '#e5e7eb',
             }}
-            onClick={() => switchRole('ผู้ดูแลระบบ')}
           >
-            1) แอดมิน (Admin)
-          </button>
-          <button
-            type="button"
-            className="btn"
-            style={{
-              background: currentUser.role === 'ผู้อนุมัติ' ? '#d97706' : 'rgba(255,255,255,0.1)',
-              color: 'white',
-              border: currentUser.role === 'ผู้อนุมัติ' ? '1px solid #fcd34d' : '1px solid rgba(255,255,255,0.2)',
-              fontSize: '12px',
-              padding: '8px 14px',
-            }}
-            onClick={() => switchRole('ผู้อนุมัติ')}
-          >
-            2) ผู้อนุมัติ (Approver)
-          </button>
-          <button
-            type="button"
-            className="btn"
-            style={{
-              background: currentUser.role === 'เจ้าหน้าที่' ? '#0d9488' : 'rgba(255,255,255,0.1)',
-              color: 'white',
-              border: currentUser.role === 'เจ้าหน้าที่' ? '1px solid #5eead4' : '1px solid rgba(255,255,255,0.2)',
-              fontSize: '12px',
-              padding: '8px 14px',
-            }}
-            onClick={() => switchRole('เจ้าหน้าที่')}
-          >
-            3) เจ้าหน้าที่ (Staff)
-          </button>
+            อีเมล: {currentUser.email}
+          </span>
         </div>
       </div>
 
@@ -367,19 +337,19 @@ export default function DashboardPage() {
             {activityLogs.slice(0, 5).map((log) => {
               const iconClass =
                 log.type === 'สร้าง' ? 'create' :
-                log.type === 'แก้ไข' ? 'edit' :
-                log.type === 'ลบ' ? 'delete' :
-                log.type === 'เข้าสู่ระบบ' ? 'login' :
-                log.type === 'อนุมัติ' ? 'approve' :
-                'withdraw';
+                  log.type === 'แก้ไข' ? 'edit' :
+                    log.type === 'ลบ' ? 'delete' :
+                      log.type === 'เข้าสู่ระบบ' ? 'login' :
+                        log.type === 'อนุมัติ' ? 'approve' :
+                          'withdraw';
 
               const iconEmoji =
                 log.type === 'สร้าง' ? '➕' :
-                log.type === 'แก้ไข' ? '✏️' :
-                log.type === 'ลบ' ? '🗑️' :
-                log.type === 'เข้าสู่ระบบ' ? '🔑' :
-                log.type === 'อนุมัติ' ? '✅' :
-                '📦';
+                  log.type === 'แก้ไข' ? '✏️' :
+                    log.type === 'ลบ' ? '🗑️' :
+                      log.type === 'เข้าสู่ระบบ' ? '🔑' :
+                        log.type === 'อนุมัติ' ? '✅' :
+                          '📦';
 
               return (
                 <div key={log.id} className="activity-item">
